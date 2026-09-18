@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "Panda Vault",
+    "slug": "panda-vault",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "pandavault",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#020617"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pandavault.app",
+      "splash": {
+        "image": "./assets/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#020617"
+      },
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Panda Vault uses Face ID to securely unlock your digital vault without re-entering your master password.",
+        "NSPhotoLibraryUsageDescription": "Panda Vault accesses your photos and videos to encrypt and store them securely.",
+        "NSCameraUsageDescription": "Panda Vault uses your camera to capture encrypted photos and videos directly into your vault."
+      }
+    },
+    "android": {
+      "splash": {
+        "image": "./assets/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#020617"
+      },
+      "adaptiveIcon": {
+        "backgroundColor": "#020617"
+      },
+      "package": "com.pandavault.app",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Panda Vault to use Face ID for biometric authentication."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload and encrypt them in Panda Vault.",
+          "cameraPermission": "The app accesses your camera to let you securely take photos and videos to store in Panda Vault."
+        }
+      ]
+    ]
+  }
+}
