@@ -10,6 +10,15 @@ import { Fingerprint, Lock } from 'lucide-react-native';
 function RootNavigation() {
   const { isLocked, unlockWithBiometrics, logout } = useAuth();
 
+  React.useEffect(() => {
+    if (isLocked) {
+      const timer = setTimeout(() => {
+        unlockWithBiometrics();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked]);
+
   if (isLocked) {
     return (
       <View style={styles.lockedContainer}>
@@ -21,7 +30,7 @@ function RootNavigation() {
           </View>
           <Text style={styles.lockedTitle}>Vault Locked</Text>
           <Text style={styles.lockedSubtitle}>
-            Authenticate with biometrics or password to unlock your encrypted credentials.
+            Scan fingerprint or use Face ID to decrypt your vault credentials.
           </Text>
         </View>
 

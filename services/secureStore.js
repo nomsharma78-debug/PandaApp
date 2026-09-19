@@ -27,9 +27,11 @@ export async function saveSessionToken(token) {
       webStorage.setItem(TOKEN_KEY, token);
       return true;
     }
-    await SecureStore.setItemAsync(TOKEN_KEY, token, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED,
-    });
+    if (token) {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    } else {
+      await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
+    }
     return true;
   } catch (error) {
     console.error('Failed to save session token:', error);

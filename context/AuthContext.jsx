@@ -34,19 +34,36 @@ export function AuthProvider({ children }) {
         setBiometricEnabledState(bioPref);
 
         const token = await getSessionToken();
+        const cookie = await getSessionCookie();
         const savedUser = await getUserData();
 
-        if (token && savedUser) {
-          setUser(savedUser);
+        // Resilient session restoration: user is authenticated if savedUser, cookie, or token exists
+        if (savedUser || token || cookie) {
+          const activeUser = savedUser || { email: 'user@pandavault.app' };
+          setUser(activeUser);
 
-          // If biometrics are enabled, lock app on launch until verified
+          // If biometrics are enabled, require unlock
           if (hardware.isAvailable && bioPref && Platform.OS !== 'web') {
             setIsLocked(true);
-            const bioResult = await authenticateWithBiometrics('Unlock Panda Vault');
-            if (bioResult.success) {
-              setIsLocked(false);
-            }
           }
+
+          // Background verification with backend (keeps user logged in offline)
+          authApi.getMe()
+            .then((meData) => {
+              if (meData && meData.user) {
+                setUser(meData.user);
+                saveUserData(meData.user);
+              }
+            })
+            .catch((err) => {
+              // Only clear session if explicitly unauthorized by server
+              if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('Session expired'))) {
+                logout();
+              }
+            });
+        } else {
+          setUser(null);
+          setIsLocked(false);
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
@@ -66,9 +83,11 @@ export function AuthProvider({ children }) {
         nextAppState === 'active'
       ) {
         const bioPref = await isBiometricEnabled();
+        const savedUser = await getUserData();
         const token = await getSessionToken();
+        const cookie = await getSessionCookie();
 
-        if (token && bioPref && Platform.OS !== 'web') {
+        if ((savedUser || token || cookie) && bioPref && Platform.OS !== 'web') {
           setIsLocked(true);
           const res = await authenticateWithBiometrics('Unlock Panda Vault');
           if (res.success) {
@@ -129,6 +148,8 @@ export function AuthProvider({ children }) {
       await authApi.logout().catch(() => {});
     } finally {
       await removeSessionToken();
+      await removeSessionCookie();
+      await saveUserData(null);
       setUser(null);
       setIsLocked(false);
       router.replace('/(auth)/login');
@@ -136,12 +157,18 @@ export function AuthProvider({ children }) {
   };
 
   const unlockWithBiometrics = async () => {
-    const res = await authenticateWithBiometrics('Unlock Panda Vault');
-    if (res.success) {
-      setIsLocked(false);
-      return true;
+    try {
+      const res = await authenticateWithBiometrics('Unlock Panda Vault');
+      if (res.success) {
+        setIsLocked(false);
+        router.replace('/(tabs)/dashboard');
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Biometric unlock error:', err);
+      return false;
     }
-    return false;
   };
 
   const toggleBiometrics = async (enabled) => {

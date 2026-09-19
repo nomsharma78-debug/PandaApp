@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Shield } from 'lucide-react-native';
+import { BookLock } from 'lucide-react-native';
 
 export function PandaLogo({ size = 'default' }) {
   const isSm = size === 'sm';
@@ -17,7 +17,7 @@ export function PandaLogo({ size = 'default' }) {
           isLg && styles.badgeLg,
         ]}
       >
-        <Shield size={iconSize} color="#2dd4bf" strokeWidth={2.5} />
+        <BookLock size={iconSize} color="#2dd4bf" strokeWidth={2.2} />
       </View>
       <View>
         <Text style={[styles.title, isSm && styles.titleSm, isLg && styles.titleLg]}>
