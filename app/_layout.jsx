@@ -1,6 +1,8 @@
 import '../global.css';
 import React from 'react';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { LogoProvider } from '../context/LogoContext';
 import { View, Text, StyleSheet } from 'react-native';
@@ -72,11 +74,15 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <LogoProvider>
-      <AuthProvider>
-        <RootNavigation />
-      </AuthProvider>
-    </LogoProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#020617' }}>
+      <SafeAreaProvider>
+        <LogoProvider>
+          <AuthProvider>
+            <RootNavigation />
+          </AuthProvider>
+        </LogoProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
