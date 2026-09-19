@@ -19,7 +19,51 @@ const webStorage = {
 const TOKEN_KEY = 'panda_vault_session_token';
 const COOKIE_KEY = 'panda_vault_session_cookie';
 const USER_KEY = 'panda_vault_user_data';
+const CREDENTIALS_KEY = 'panda_vault_saved_credentials';
 const BIOMETRIC_ENABLED_KEY = 'panda_vault_biometric_enabled';
+
+export async function saveSavedCredentials(credentials) {
+  try {
+    const raw = JSON.stringify(credentials);
+    if (isWeb) {
+      webStorage.setItem(CREDENTIALS_KEY, raw);
+      return true;
+    }
+    await SecureStore.setItemAsync(CREDENTIALS_KEY, raw);
+    return true;
+  } catch (error) {
+    console.error('Failed to save credentials:', error);
+    return false;
+  }
+}
+
+export async function getSavedCredentials() {
+  try {
+    if (isWeb) {
+      const raw = webStorage.getItem(CREDENTIALS_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }
+    const raw = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error('Failed to get credentials:', error);
+    return null;
+  }
+}
+
+export async function removeSavedCredentials() {
+  try {
+    if (isWeb) {
+      webStorage.deleteItem(CREDENTIALS_KEY);
+      return true;
+    }
+    await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+    return true;
+  } catch (error) {
+    console.error('Failed to remove credentials:', error);
+    return false;
+  }
+}
 
 export async function saveSessionToken(token) {
   try {
@@ -124,6 +168,20 @@ export async function getUserData() {
   } catch (error) {
     console.error('Failed to get user data:', error);
     return null;
+  }
+}
+
+export async function removeUserData() {
+  try {
+    if (isWeb) {
+      webStorage.deleteItem(USER_KEY);
+      return true;
+    }
+    await SecureStore.deleteItemAsync(USER_KEY);
+    return true;
+  } catch (error) {
+    console.error('Failed to remove user data:', error);
+    return false;
   }
 }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -10,6 +11,10 @@ import {
 } from 'lucide-react-native';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 18 : 12);
+  const tabHeight = 62 + bottomInset;
+
   return (
     <Tabs
       screenOptions={{
@@ -17,12 +22,17 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#2dd4bf',
         tabBarInactiveTintColor: '#64748b',
         tabBarStyle: {
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          backgroundColor: 'rgba(15, 23, 42, 0.98)',
           borderTopColor: 'rgba(30, 41, 59, 0.8)',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          paddingTop: 10,
+          height: tabHeight,
+          paddingBottom: bottomInset + 4,
+          paddingTop: 8,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 16,
         },
         tabBarLabelStyle: {
           fontSize: 10,

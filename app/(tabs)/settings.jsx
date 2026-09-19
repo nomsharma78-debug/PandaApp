@@ -15,6 +15,8 @@ import { ScreenWrapper } from '../../components/layout/ScreenWrapper';
 import { Card } from '../../components/ui/Card';
 import { AlertModal } from '../../components/ui/AlertModal';
 import { useAuth } from '../../context/AuthContext';
+import { useLogo, LOGO_PRESETS } from '../../context/LogoContext';
+import * as ImagePicker from 'expo-image-picker';
 import { settingsApi } from '../../services/api';
 import {
   User,
@@ -35,6 +37,12 @@ import {
   Clock,
   ShieldCheck,
   Sparkles,
+  BookLock,
+  Cat,
+  Upload,
+  RotateCcw,
+  Palette,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 
 export default function SettingsScreen() {
@@ -45,6 +53,9 @@ export default function SettingsScreen() {
     biometricEnabled,
     toggleBiometrics,
   } = useAuth();
+
+  const { logoConfig, setLogoPreset, setCustomLogoUri, resetLogo } = useLogo();
+  const [isPickingImage, setIsPickingImage] = useState(false);
 
   // Profile Edit State
   const [name, setName] = useState(user?.name || '');
@@ -91,6 +102,49 @@ export default function SettingsScreen() {
 
   const closeAlert = () => {
     setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
+
+  // Custom Logo Image Picker
+  const handlePickCustomLogo = async () => {
+    try {
+      setIsPickingImage(true);
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!res.canceled && res.assets && res.assets[0]?.uri) {
+        setCustomLogoUri(res.assets[0].uri);
+        showAlert(
+          'Logo Updated',
+          'Your vault branding and app icon have been successfully customized.',
+          'success'
+        );
+      }
+    } catch (e) {
+      showAlert('Error', e.message || 'Could not pick image.', 'error');
+    } finally {
+      setIsPickingImage(false);
+    }
+  };
+
+  const renderPresetIcon = (iconName, isSelected) => {
+    const iconColor = isSelected ? '#2dd4bf' : '#94a3b8';
+    switch (iconName) {
+      case 'Cat':
+        return <Cat size={18} color={iconColor} />;
+      case 'Shield':
+        return <Shield size={18} color={iconColor} />;
+      case 'ShieldCheck':
+        return <ShieldCheck size={18} color={iconColor} />;
+      case 'Lock':
+        return <Lock size={18} color={iconColor} />;
+      case 'BookLock':
+      default:
+        return <BookLock size={18} color={iconColor} />;
+    }
   };
 
   // Fetch Active Sessions
@@ -315,6 +369,96 @@ export default function SettingsScreen() {
           </View>
         </Card>
       )}
+
+      {/* App Branding & Custom Logo Card */}
+      <Card
+        icon={Palette}
+        title="App Icon & Logo"
+        subtitle="Custom Icon & Vault Branding"
+      >
+        <View style={styles.brandingContainer}>
+          <Text style={styles.brandingSectionTitle}>CHOOSE LOGO THEME</Text>
+          <View style={styles.presetsGrid}>
+            {LOGO_PRESETS.map((preset) => {
+              const isSelected =
+                logoConfig?.type === 'preset' && logoConfig?.presetId === preset.id;
+              return (
+                <TouchableOpacity
+                  key={preset.id}
+                  onPress={() => setLogoPreset(preset.id)}
+                  style={[
+                    styles.presetOption,
+                    isSelected && styles.presetOptionSelected,
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.presetIconBox,
+                      isSelected && styles.presetIconBoxSelected,
+                    ]}
+                  >
+                    {renderPresetIcon(preset.icon, isSelected)}
+                  </View>
+                  <Text
+                    style={[
+                      styles.presetName,
+                      isSelected && styles.presetNameSelected,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {preset.name}
+                  </Text>
+                  {isSelected && (
+                    <View style={styles.presetSelectedBadge}>
+                      <Check size={8} color="#020617" strokeWidth={3} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.brandingSectionTitle, { marginTop: 14 }]}>
+            OR UPLOAD CUSTOM LOGO
+          </Text>
+          <View style={styles.customLogoRow}>
+            <TouchableOpacity
+              onPress={handlePickCustomLogo}
+              disabled={isPickingImage}
+              style={[
+                styles.uploadLogoBtn,
+                logoConfig?.type === 'custom' && styles.uploadLogoBtnActive,
+              ]}
+              activeOpacity={0.8}
+            >
+              {isPickingImage ? (
+                <ActivityIndicator size="small" color="#2dd4bf" />
+              ) : (
+                <>
+                  <Upload size={14} color="#2dd4bf" />
+                  <Text style={styles.uploadLogoBtnText}>
+                    {logoConfig?.type === 'custom'
+                      ? 'Change Custom Image'
+                      : 'Upload From Gallery'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {(logoConfig?.type === 'custom' || logoConfig?.presetId !== 'book') && (
+              <TouchableOpacity
+                onPress={resetLogo}
+                style={styles.resetLogoBtn}
+                activeOpacity={0.8}
+              >
+                <RotateCcw size={13} color="#94a3b8" />
+                <Text style={styles.resetLogoBtnText}>Reset</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Card>
 
       {/* Active Sessions Manager */}
       <Card icon={Smartphone} title="Active Sessions" subtitle="Connected Devices">
@@ -910,5 +1054,109 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#020617',
+  },
+  brandingContainer: {
+    gap: 8,
+  },
+  brandingSectionTitle: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  presetsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetOption: {
+    flexGrow: 1,
+    flexBasis: '30%',
+    backgroundColor: '#090d16',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  presetOptionSelected: {
+    borderColor: '#2dd4bf',
+    backgroundColor: 'rgba(45, 212, 191, 0.08)',
+  },
+  presetIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  presetIconBoxSelected: {
+    backgroundColor: 'rgba(45, 212, 191, 0.2)',
+  },
+  presetName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94a3b8',
+    textAlign: 'center',
+  },
+  presetNameSelected: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  presetSelectedBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#2dd4bf',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  uploadLogoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(45, 212, 191, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 212, 191, 0.3)',
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  uploadLogoBtnActive: {
+    borderColor: '#2dd4bf',
+    backgroundColor: 'rgba(45, 212, 191, 0.2)',
+  },
+  uploadLogoBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2dd4bf',
+  },
+  resetLogoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  resetLogoBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94a3b8',
   },
 });

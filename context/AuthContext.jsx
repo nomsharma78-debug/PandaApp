@@ -7,6 +7,12 @@ import {
   removeSessionToken,
   getUserData,
   saveUserData,
+  removeUserData,
+  getSavedCredentials,
+  saveSavedCredentials,
+  removeSavedCredentials,
+  getSessionCookie,
+  removeSessionCookie,
   isBiometricEnabled,
   setBiometricEnabled as storeBiometricPref,
 } from '../services/secureStore';
@@ -33,34 +39,39 @@ export function AuthProvider({ children }) {
         const bioPref = await isBiometricEnabled();
         setBiometricEnabledState(bioPref);
 
+        const savedCreds = await getSavedCredentials();
+        const savedUser = await getUserData();
         const token = await getSessionToken();
         const cookie = await getSessionCookie();
-        const savedUser = await getUserData();
 
-        // Resilient session restoration: user is authenticated if savedUser, cookie, or token exists
-        if (savedUser || token || cookie) {
-          const activeUser = savedUser || { email: 'user@pandavault.app' };
+        // If user logged in previously, restore session immediately (like WhatsApp)
+        if (savedCreds || savedUser || token || cookie) {
+          const activeUser = savedUser || { email: savedCreds?.email || 'user' };
           setUser(activeUser);
 
-          // If biometrics are enabled, require unlock
+          // If biometric is enabled by user, prompt for unlock
           if (hardware.isAvailable && bioPref && Platform.OS !== 'web') {
             setIsLocked(true);
+          } else {
+            setIsLocked(false); // Stays permanently logged in if fingerprint not toggled on!
           }
 
-          // Background verification with backend (keeps user logged in offline)
-          authApi.getMe()
-            .then((meData) => {
-              if (meData && meData.user) {
-                setUser(meData.user);
-                saveUserData(meData.user);
-              }
-            })
-            .catch((err) => {
-              // Only clear session if explicitly unauthorized by server
-              if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('Session expired'))) {
-                logout();
-              }
-            });
+          // Silent background session sync
+          if (savedCreds?.email && savedCreds?.password) {
+            authApi.login(savedCreds.email, savedCreds.password)
+              .then((res) => {
+                if (res.user) {
+                  setUser(res.user);
+                  saveUserData(res.user);
+                }
+              })
+              .catch((err) => {
+                // If credentials were changed or revoked, log out
+                if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('User not found'))) {
+                  logout();
+                }
+              });
+          }
         } else {
           setUser(null);
           setIsLocked(false);
@@ -83,11 +94,10 @@ export function AuthProvider({ children }) {
         nextAppState === 'active'
       ) {
         const bioPref = await isBiometricEnabled();
+        const savedCreds = await getSavedCredentials();
         const savedUser = await getUserData();
-        const token = await getSessionToken();
-        const cookie = await getSessionCookie();
 
-        if ((savedUser || token || cookie) && bioPref && Platform.OS !== 'web') {
+        if ((savedCreds || savedUser) && bioPref && Platform.OS !== 'web') {
           setIsLocked(true);
           const res = await authenticateWithBiometrics('Unlock Panda Vault');
           if (res.success) {
@@ -109,6 +119,8 @@ export function AuthProvider({ children }) {
       const token = res.token || res.session?.token || res.rawToken;
       const userData = res.user || { email };
 
+      // Persist credentials for permanent login like WhatsApp
+      await saveSavedCredentials({ email, password });
       if (token) {
         await saveSessionToken(token);
       }
@@ -129,6 +141,7 @@ export function AuthProvider({ children }) {
       const token = res.token || res.session?.token || res.rawToken;
       const userData = res.user || { email, name };
 
+      await saveSavedCredentials({ email, password });
       if (token) {
         await saveSessionToken(token);
       }
@@ -147,9 +160,10 @@ export function AuthProvider({ children }) {
     try {
       await authApi.logout().catch(() => {});
     } finally {
+      await removeSavedCredentials();
+      await removeUserData();
       await removeSessionToken();
       await removeSessionCookie();
-      await saveUserData(null);
       setUser(null);
       setIsLocked(false);
       router.replace('/(auth)/login');

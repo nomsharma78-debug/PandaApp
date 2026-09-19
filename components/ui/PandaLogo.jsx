@@ -1,12 +1,41 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { BookLock } from 'lucide-react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { BookLock, Cat, Shield, ShieldCheck, Lock } from 'lucide-react-native';
+import { useLogo } from '../../context/LogoContext';
 
 export function PandaLogo({ size = 'default' }) {
+  const { logoConfig } = useLogo();
   const isSm = size === 'sm';
   const isLg = size === 'lg';
 
   const iconSize = isSm ? 18 : isLg ? 28 : 22;
+  const imageSize = isSm ? 24 : isLg ? 40 : 32;
+
+  const renderIcon = () => {
+    if (logoConfig?.type === 'custom' && logoConfig?.customUri) {
+      return (
+        <Image
+          source={{ uri: logoConfig.customUri }}
+          style={{ width: imageSize, height: imageSize, borderRadius: isSm ? 6 : 10 }}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    switch (logoConfig?.presetId) {
+      case 'cat':
+        return <Cat size={iconSize} color="#2dd4bf" strokeWidth={2.2} />;
+      case 'panda':
+        return <Shield size={iconSize} color="#2dd4bf" strokeWidth={2.2} />;
+      case 'shield':
+        return <ShieldCheck size={iconSize} color="#2dd4bf" strokeWidth={2.2} />;
+      case 'lock':
+        return <Lock size={iconSize} color="#2dd4bf" strokeWidth={2.2} />;
+      case 'book':
+      default:
+        return <BookLock size={iconSize} color="#2dd4bf" strokeWidth={2.2} />;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -17,7 +46,7 @@ export function PandaLogo({ size = 'default' }) {
           isLg && styles.badgeLg,
         ]}
       >
-        <BookLock size={iconSize} color="#2dd4bf" strokeWidth={2.2} />
+        {renderIcon()}
       </View>
       <View>
         <Text style={[styles.title, isSm && styles.titleSm, isLg && styles.titleLg]}>

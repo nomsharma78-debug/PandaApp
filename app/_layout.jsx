@@ -2,6 +2,7 @@ import '../global.css';
 import React from 'react';
 import { Stack } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { LogoProvider } from '../context/LogoContext';
 import { View, Text, StyleSheet } from 'react-native';
 import { Button } from '../components/ui/Button';
 import { PandaLogo } from '../components/ui/PandaLogo';
@@ -71,9 +72,11 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigation />
-    </AuthProvider>
+    <LogoProvider>
+      <AuthProvider>
+        <RootNavigation />
+      </AuthProvider>
+    </LogoProvider>
   );
 }
 
