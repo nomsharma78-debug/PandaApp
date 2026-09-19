@@ -7,19 +7,9 @@
     "icon": "./assets/icon.png",
     "scheme": "pandavault",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#020617"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pandavault.app",
-      "splash": {
-        "image": "./assets/icon.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#020617"
-      },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Panda Vault uses Face ID to securely unlock your digital vault without re-entering your master password.",
         "NSPhotoLibraryUsageDescription": "Panda Vault accesses your photos and videos to encrypt and store them securely.",
@@ -27,11 +17,6 @@
       }
     },
     "android": {
-      "splash": {
-        "image": "./assets/icon.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#020617"
-      },
       "adaptiveIcon": {
         "backgroundColor": "#020617"
       },
@@ -52,6 +37,14 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#020617"
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow Panda Vault to use Face ID for biometric authentication."
@@ -63,7 +56,8 @@
           "photosPermission": "The app accesses your photos to let you upload and encrypt them in Panda Vault.",
           "cameraPermission": "The app accesses your camera to let you securely take photos and videos to store in Panda Vault."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "router": {},
