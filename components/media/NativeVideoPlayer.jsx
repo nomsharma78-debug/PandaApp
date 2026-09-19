@@ -9,12 +9,23 @@ export function NativeVideoPlayer({
   loop = false,
   showControls = true,
 }) {
-  const player = useVideoPlayer(source, (p) => {
-    p.loop = loop;
-    if (autoPlay) {
-      p.play();
+  const safeSource = source || '';
+  const player = useVideoPlayer(safeSource, (p) => {
+    if (p) {
+      p.loop = loop;
+      if (autoPlay && source) {
+        p.play();
+      }
     }
   });
+
+  if (!source) {
+    return (
+      <View style={[styles.container, style]}>
+        <ActivityIndicator size="small" color="#2dd4bf" />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, style]}>
