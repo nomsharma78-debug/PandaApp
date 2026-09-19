@@ -44,9 +44,9 @@ export function AuthProvider({ children }) {
         const token = await getSessionToken();
         const cookie = await getSessionCookie();
 
-        // If user logged in previously, restore session immediately (like WhatsApp)
-        if (savedCreds || savedUser || token || cookie) {
-          const activeUser = savedUser || { email: savedCreds?.email || 'user' };
+        // If user logged in previously with saved credentials, restore session
+        if (savedCreds?.email && savedCreds?.password) {
+          const activeUser = savedUser || { email: savedCreds.email };
           setUser(activeUser);
 
           // If biometric is enabled by user, prompt for unlock
@@ -57,22 +57,21 @@ export function AuthProvider({ children }) {
           }
 
           // Silent background session sync
-          if (savedCreds?.email && savedCreds?.password) {
-            authApi.login(savedCreds.email, savedCreds.password)
-              .then((res) => {
-                if (res.user) {
-                  setUser(res.user);
-                  saveUserData(res.user);
-                }
-              })
-              .catch((err) => {
-                // If credentials were changed or revoked, log out
-                if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('User not found'))) {
-                  logout();
-                }
-              });
-          }
+          authApi.login(savedCreds.email, savedCreds.password)
+            .then((res) => {
+              if (res.user) {
+                setUser(res.user);
+                saveUserData(res.user);
+              }
+            })
+            .catch((err) => {
+              // If credentials were changed or revoked on server, log out
+              if (err.message && (err.message.includes('Invalid email or password') || err.message.includes('User not found'))) {
+                logout();
+              }
+            });
         } else {
+          // Explicitly logged out - no credentials
           setUser(null);
           setIsLocked(false);
         }
@@ -95,9 +94,9 @@ export function AuthProvider({ children }) {
       ) {
         const bioPref = await isBiometricEnabled();
         const savedCreds = await getSavedCredentials();
-        const savedUser = await getUserData();
 
-        if ((savedCreds || savedUser) && bioPref && Platform.OS !== 'web') {
+        // Only lock if user is authenticated and has saved credentials
+        if (savedCreds?.email && savedCreds?.password && bioPref && Platform.OS !== 'web') {
           setIsLocked(true);
           const res = await authenticateWithBiometrics('Unlock Panda Vault');
           if (res.success) {
@@ -164,6 +163,8 @@ export function AuthProvider({ children }) {
       await removeUserData();
       await removeSessionToken();
       await removeSessionCookie();
+      await storeBiometricPref(false);
+      setBiometricEnabledState(false);
       setUser(null);
       setIsLocked(false);
       router.replace('/(auth)/login');
@@ -172,9 +173,29 @@ export function AuthProvider({ children }) {
 
   const unlockWithBiometrics = async () => {
     try {
+      const savedCreds = await getSavedCredentials();
+      if (!savedCreds?.email || !savedCreds?.password) {
+        // No saved credentials exist! User must log in with email/password.
+        setIsLocked(false);
+        setUser(null);
+        router.replace('/(auth)/login');
+        return false;
+      }
+
       const res = await authenticateWithBiometrics('Unlock Panda Vault');
       if (res.success) {
         setIsLocked(false);
+        const savedUser = await getUserData();
+        setUser(savedUser || { email: savedCreds.email });
+
+        // Background session refresh
+        authApi.login(savedCreds.email, savedCreds.password).then((loginRes) => {
+          if (loginRes.user) {
+            setUser(loginRes.user);
+            saveUserData(loginRes.user);
+          }
+        }).catch(() => {});
+
         router.replace('/(tabs)/dashboard');
         return true;
       }

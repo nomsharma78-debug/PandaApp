@@ -5,11 +5,10 @@ import { PandaLogo } from '../../components/ui/PandaLogo';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { AlertModal } from '../../components/ui/AlertModal';
-import { useAuth } from '../../context/AuthContext';
-import { Mail, Lock, User, Fingerprint, ArrowRight } from 'lucide-react-native';
+import { Mail, Lock, User, ArrowRight } from 'lucide-react-native';
 
 export default function LoginScreen() {
-  const { login, register, biometricsAvailable, unlockWithBiometrics } = useAuth();
+  const { login, register } = useAuth();
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
@@ -136,17 +135,6 @@ export default function LoginScreen() {
           >
             {mode === 'login' ? 'Unlock Panda Vault' : 'Create Encrypted Vault'}
           </Button>
-
-          {biometricsAvailable && mode === 'login' && (
-            <Button
-              variant="secondary"
-              icon={Fingerprint}
-              onPress={unlockWithBiometrics}
-              style={styles.bioBtn}
-            >
-              Quick Unlock with Biometrics
-            </Button>
-          )}
         </View>
       </View>
 
